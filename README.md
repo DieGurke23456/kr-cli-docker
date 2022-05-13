@@ -12,3 +12,9 @@ git:             git version 2.17.1
 firefox:         Mozilla Firefox 98.0.2
 kr-cli:          1.1.0   
 ``` 
+
+## How to use
+```shell
+docker run -i --net=host --rm -v $PWD:/home/e2e -w /home/e2e -e DISPLAY kr-cli/base:ubuntu18.04-12.0 "TEST.html" --report="REPORT_DIR"
+```
+
