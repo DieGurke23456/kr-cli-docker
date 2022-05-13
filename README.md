@@ -14,8 +14,10 @@ kr-cli:          1.1.0
 ``` 
 
 ## Before using 
+```shell
 [ -d ~/workspace ] || mkdir ~/workspace
 xhost local:root
+```
 
 ## How to use
 ```shell
