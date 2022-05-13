@@ -64,14 +64,14 @@ RUN apt-get install -qqy x11-apps
 RUN npm i -g katalon-recorder-cli
 
 # versions of local tools
-RUN echo  " node version: \
-  $(node -v) \n" \
+RUN echo  " node version: $(node -v) \n" \
   "npm version:     $(npm -v) \n" \
   "yarn version:    $(yarn -v) \n" \
   "debian version:  $(cat /etc/debian_version) \n" \
   "user:            $(whoami) \n" \
   "git:             $(git --version) \n"\
-  "Firefox version: $(firefox --version) \n"
+  "Firefox version: $(firefox --version) \n"\
+  "kr-cli:          $(kr-cli -v) \n"
   
 RUN mkdir /home/e2e
 RUN cd /home/e2e

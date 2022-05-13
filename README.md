@@ -1,11 +1,14 @@
-# kr-cli/base:ubuntu16-12.13.1
+# kr-cli/base:ubuntu18.04-12.0
 
-Image with Ubuntu 16 and Node 12.13.1
+Image with Ubuntu 18.04 and Node 12
 
 ```
-node version:    v8.16.2
-npm version:     6.4.1
-yarn version:
-debian version:  stretch/sid
+node version:    v12.22.12
+npm version:     8.10.0
+yarn version:    1.22.18
+debian version:  buster/sid
 user:            root
+git:             git version 2.17.1
+firefox:         Mozilla Firefox 98.0.2
+kr-cli:          1.1.0   
 ``` 
