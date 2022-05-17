@@ -63,17 +63,25 @@ USER root
 RUN apt-get install -qqy x11-apps
 RUN npm i -g katalon-recorder-cli
 
+#install python3
+RUN apt-get install -y software-properties-common
+RUN add-apt-repository -y ppa:deadsnakes/ppa
+RUN apt-get update
+RUN apt-get -y install python3.8
+
 # versions of local tools
-RUN echo  " node version: $(node -v) \n" \
+RUN echo "node version: $(node -v) \n" \
   "npm version:     $(npm -v) \n" \
   "yarn version:    $(yarn -v) \n" \
   "debian version:  $(cat /etc/debian_version) \n" \
   "user:            $(whoami) \n" \
-  "git:             $(git --version) \n"\
-  "Firefox version: $(firefox --version) \n"\
+  "git:             $(git --version) \n" \
+  "Firefox version: $(firefox --version) \n" \
+  "python:          $(python3 --version) \n" \
   "kr-cli:          $(kr-cli -v) \n"
   
 RUN mkdir /home/e2e
-RUN cd /home/e2e
+RUN mkdir /home/scripts/
+COPY scripts/commands.py /home/scripts/commands.py
 
-ENTRYPOINT ["kr-cli", "run", "firefox"]
+ENTRYPOINT ["python3", "/home/scripts/commands.py"]
