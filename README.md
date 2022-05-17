@@ -37,7 +37,7 @@ docker run -e DISPLAY=55 --name xvfb --net NETWORK metal3d/xvfb
 ```
 #### run headless
 ```shell
-docker run -i --net NETWORK --rm -v $PWD:/home/e2e --add-host "pageundertest:172.17.0.1" -w /home/e2e -e DISPLAY=xvfb:55 --link xvfb kr-cli/base:ubuntu18.04-12.0 "TEST.html" --report="REPORT_PATH"
+docker run -i --net NETWORK --rm -v $PWD:/home/e2e -w /home/e2e -e DISPLAY=xvfb:55 --link xvfb kr-cli/base:ubuntu18.04-12.0 "TEST.html" --report="REPORT_PATH"
 
 ```
 
