@@ -19,7 +19,7 @@ if not os.path.exists("reports"):
     os.makedirs("reports")
 for x in testlist:
     os.system('kr-cli run firefox ' + x + ' -rp "reports" --data "userdaten.csv"')
-we shall store all the file names in this list
+    #we shall store all the file names in this list
 filelist = []
 for root, dirs, files in os.walk(path):
     for file in files:
