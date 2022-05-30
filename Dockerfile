@@ -69,6 +69,7 @@ RUN add-apt-repository -y ppa:deadsnakes/ppa
 RUN apt-get update
 RUN apt-get -y install python3.8
 RUN apt-get -y install python3-pip
+RUN apt-get -y install xvfb
 RUN pip3 install psutil
 
 # versions of local tools

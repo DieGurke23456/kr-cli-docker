@@ -34,7 +34,7 @@ def kill_proc_tree(pid, sig=signal.SIGTERM, include_parent=True,timeout=None, on
     return (gone, alive)
 def run_test(testpath):
     try :
-        proc = subprocess.Popen(["kr-cli", "run", "firefox", testpath, "-rp", "reports", "--data","userdaten.csv"])
+        proc = subprocess.Popen(["xvfb-run","kr-cli", "run", "firefox", testpath, "-rp", "reports", "--data","userdaten.csv"])
         time.sleep(TIMEOUT_DURATION)  
         children = getChildProcesses(proc.pid)
         print(len(getOnlyWithNameFromList(children, "Web Content")))
