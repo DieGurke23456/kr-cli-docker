@@ -7,7 +7,9 @@ import subprocess
 import signal
 import psutil
 import csv
-TIMEOUT_DURATION = 20 # the amount of seconds to wait for kr-cli to open another firefox-tab before we check if they have been opened
+from threading import Timer
+import time
+TIMEOUT_DURATION = 500 # the amount of seconds to wait for kr-cli to open another firefox-tab before we check if they have been opened
 def getChildProcesses(pid):
     children= []
     try: 
@@ -32,17 +34,28 @@ def kill_proc_tree(pid, sig=signal.SIGTERM, include_parent=True,timeout=None, on
     gone, alive = psutil.wait_procs(children, timeout=timeout,
                                     callback=on_terminate)
     return (gone, alive)
+def check_enough_firefox_windows(proc):
+    children = getChildProcesses(proc.pid)
+    if (len(getOnlyWithNameFromList(children, "Web Content")) < 4):
+        kill_proc_tree(proc.pid)
+        raise subprocess.TimeoutExpired(testpath, TIMEOUT_DURATION)
+    else:
+        proc.wait()    
 def run_test(testpath):
     try :
-        proc = subprocess.Popen(["xvfb-run","kr-cli", "run", "firefox", testpath, "-rp", "reports", "--data","userdaten.csv"])
-        time.sleep(TIMEOUT_DURATION)  
-        children = getChildProcesses(proc.pid)
-        print(len(getOnlyWithNameFromList(children, "Web Content")))
-        if (len(getOnlyWithNameFromList(children, "Web Content")) < 4):
-            kill_proc_tree(proc.pid)
-            raise subprocess.TimeoutExpired(testpath, TIMEOUT_DURATION)
-        else:
-            proc.wait()
+        subprocess.run(["xvfb-run","kr-cli", "run", "firefox", testpath, "-rp", "reports", "--data","userdaten.csv"], timeout=TIMEOUT_DURATION)
+        #t = Timer(TIMEOUT_DURATION, check_enough_firefox_windows,[proc])
+        #t.start()
+        #proc.wait()
+        ##proc.wait()
+        ##time.sleep(TIMEOUT_DURATION)  
+        #children = getChildProcesses(proc.pid)
+        ##print(len(getOnlyWithNameFromList(children, "Web Content")))
+        #if (len(getOnlyWithNameFromList(children, "Web Content")) < 4):
+            #kill_proc_tree(proc.pid)
+            #raise subprocess.TimeoutExpired(testpath, TIMEOUT_DURATION)
+        #else:
+            #proc.wait()
     except subprocess.TimeoutExpired:
         print("Test timeout expired!")
         print(proc.pid)
