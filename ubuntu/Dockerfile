@@ -87,4 +87,4 @@ RUN mkdir /home/e2e
 RUN mkdir /home/scripts/
 COPY scripts/commands.py /home/scripts/commands.py
 
-ENTRYPOINT ["python3", "/home/scripts/commands.py"]
+#ENTRYPOINT ["python3", "/home/scripts/commands.py"]
