@@ -43,7 +43,7 @@ def check_enough_firefox_windows(proc):
         proc.wait()    
 def run_test(testpath):
     try :
-        subprocess.run(["xvfb-run","kr-cli", "run", "firefox", testpath, "-rp", "reports", "--data","userdaten.csv"], timeout=TIMEOUT_DURATION)
+        subprocess.run(["xvfb-run","--server-args=-screen 0, 1024x768x24","kr-cli", "run", "firefox", testpath, "-rp", testpath + "/reports", "--data",testpath + "/userdaten.csv"], timeout=TIMEOUT_DURATION)
         #t = Timer(TIMEOUT_DURATION, check_enough_firefox_windows,[proc])
         #t.start()
         #proc.wait()
@@ -69,17 +69,15 @@ def get_tests_in_dir(path):
     return testlist
 def run_tests(testdir):
     oldpath = os.getcwd()
-    os.chdir(testdir)
-    testlist = get_tests_in_dir(os.getcwd())
-    if not os.path.exists("reports"):
-        os.makedirs("reports")
-    for test in testlist:
-        run_test(test)
-        #pid = os.fork()
-        #if n : 
-            #pass
-        #sys.exit()
+    run_test(testdir)
     os.chdir(oldpath)
+def remove_logs(path):
+    for root, dirs, files in os.walk(path+ "/reports"):
+        for file in files:
+            if(file.endswith("execution.csv") or file.endswith("execution.log")):
+                os.remove(os.path.join(root,file))
+        for dir in dirs:
+            os.rmdir(os.path.join(root, dir))
 def get_test_log_files(path):
     filelist = []
     for root, dirs, files in os.walk(path):
@@ -214,6 +212,8 @@ if (len(sys.argv) > 2):
 else:
     reportFileName = "testbericht"
     
+print("removing old logs...")
+remove_logs(n)
 print("running tests...")
 run_tests(n)
 oldpath = os.getcwd()
