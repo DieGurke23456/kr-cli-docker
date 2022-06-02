@@ -232,6 +232,7 @@ csvFiles = get_test_csv_files(n)
 combined_csv = read_and_combine_csv_files(csvFiles)
 suites = suites_from_combined_csv(combined_csv)
 write_suites(suites, reportFileName)
+print('checking user')
 print(os.environ['LOG_OUPUT_OWNER'])
 if os.environ['LOG_OUPUT_OWNER']:
     print("updating permissions...")
