@@ -74,10 +74,16 @@ def run_tests(testdir):
 def remove_logs(path):
     for root, dirs, files in os.walk(path+ "/reports"):
         for file in files:
-            if(file.endswith("execution.csv") or file.endswith("execution.log")):
+            try:
                 os.remove(os.path.join(root,file))
+            except OSError as error:
+                print(error)
+                print("File '%s' can not be removed" %file)
         for dir in dirs:
-            os.rmdir(os.path.join(root, dir))
+            try:
+                os.rmdir(os.path.join(root, dir))
+            except OSError as error:
+                print("Directory '%s' can not be removed" %dir)
 def get_test_log_files(path):
     filelist = []
     for root, dirs, files in os.walk(path):
@@ -203,7 +209,9 @@ def write_suites(suites, reportFileName):
         for e in suites:
             x.write(string_from_test_suite(e) + "\n------------------------------------------------\n")
         x.write(summaryString)
-    
+def update_file_owner(newOwner, filename, recursive=False):
+    recString = "-R" if recursive else ""
+    os.system("chown {recString} {newOwner} {filename}".format(recString=recString, newOwner=newOwner, filename=filename))
 
 #main program
 n = str(sys.argv[1])
@@ -224,3 +232,9 @@ csvFiles = get_test_csv_files(n)
 combined_csv = read_and_combine_csv_files(csvFiles)
 suites = suites_from_combined_csv(combined_csv)
 write_suites(suites, reportFileName)
+print(os.environ['LOG_OUPUT_OWNER'])
+if os.environ['LOG_OUPUT_OWNER']:
+    print("updating permissions...")
+    update_file_owner(os.environ['LOG_OUPUT_OWNER'], n + "/reports",recursive=True)
+    update_file_owner(os.environ['LOG_OUPUT_OWNER'], reportFileName)
+

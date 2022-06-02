@@ -1,5 +1,5 @@
 FROM alpine:3.16.0 
-USER root
+#USER root
 
 #install npm
 RUN apk add --update npm
