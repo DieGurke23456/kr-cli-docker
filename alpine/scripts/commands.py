@@ -10,7 +10,38 @@ import csv
 from threading import Timer
 import time
 import getopt
+
 TIMEOUT_DURATION = 350 
+def print_usage():
+    print("test.py [-h] [-o OUT_FILENAME] [-r RETRIES] IN_DIR")
+def getConfigFromCli(argv):
+    argsListNoFileName = argv[1:]
+
+    optionsString = "ho:"
+    options, posArgs = getopt.getopt(argsListNoFileName, optionsString)
+    
+    if len(posArgs) != 1:
+        raise getopt.GetoptError
+    
+    headless = False
+    if ('-h', '') in options:
+        headless = True
+        print("headless")
+    
+    reportFileName = "reportFile"
+    if any(x[0] == '-o' for x in options):
+        reportFileName = [x for x in options if x[0] == '-o' ][0][1]
+    
+    retries = 0
+    if any(x[0] == '-r' for x in options):
+        retries = [x for x in options if x[0] == '-r' ][0][1]
+        try:
+            retries = int(retries)
+        except:
+            
+            raise getopt.GetoptError
+    return [headless, reportFileName, posArgs[0]]
+
 def getChildProcesses(pid):
     children= []
     try: 
@@ -42,6 +73,10 @@ def check_enough_firefox_windows(proc):
         raise subprocess.TimeoutExpired(testpath, TIMEOUT_DURATION)
     else:
         proc.wait()    
+        
+def kill_stuff():
+    subprocess.run(["killall", "xvfb"]) # kill xvfb runtime blocking display :99
+    subprocess.run(["pkill","node"]) # kill node-runtime blocking port :3500
 def run_test(path, test, headless=True):
     try:
         command = []
@@ -65,6 +100,7 @@ def run_test(path, test, headless=True):
             #proc.wait()
     except subprocess.TimeoutExpired:
         print("Test timeout expired!")
+        kill_stuff()
         # print(proc.pid)
         return -1
 
@@ -81,8 +117,7 @@ def run_tests(testdir):
     for test in testlist:
         retval = run_test(testdir, testdir + "/" + test)
         if retval == -1:
-            subprocess.run(["killall", "xvfb"])
-            run_test(testdir, testdir + "/" + test) #retry once 
+            retval = run_test(testdir, testdir + "/" + test) #retry once 
     os.chdir(oldpath)
 def remove_logs(path):
     for root, dirs, files in os.walk(path+ "/reports"):
