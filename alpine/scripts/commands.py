@@ -9,6 +9,7 @@ import psutil
 import csv
 from threading import Timer
 import time
+import getopt
 TIMEOUT_DURATION = 500 
 def getChildProcesses(pid):
     children= []
@@ -41,9 +42,14 @@ def check_enough_firefox_windows(proc):
         raise subprocess.TimeoutExpired(testpath, TIMEOUT_DURATION)
     else:
         proc.wait()    
-def run_test(path, test):
+def run_test(path, test, headless=True):
     try :
-        subprocess.run(["xvfb-run","--server-args=-screen 0, 1024x768x24","kr-cli", "run", "firefox", test, "-rp", path + "/reports", "--data",path + "/userdaten.csv"], timeout=TIMEOUT_DURATION)
+        command = []
+        if headless:
+            command = ["xvfb-run","--server-args=-screen 0, 1024x768x24"]
+        
+        command = command + ["kr-cli", "run", "firefox", test, "-rp", path + "/reports", "--data",path + "/userdaten.csv"]
+        subprocess.run(command, timeout=TIMEOUT_DURATION)    
         return 1
         #t = Timer(TIMEOUT_DURATION, check_enough_firefox_windows,[proc])
         #t.start()
@@ -59,7 +65,7 @@ def run_test(path, test):
             #proc.wait()
     except subprocess.TimeoutExpired:
         print("Test timeout expired!")
-        print(proc.pid)
+        #print(proc.pid)
         return -1
 
 def get_tests_in_dir(path):
@@ -219,7 +225,11 @@ def update_file_owner(newOwner, filename, recursive=False):
     recString = "-R" if recursive else ""
     os.system("chown {recString} {newOwner} {filename}".format(recString=recString, newOwner=newOwner, filename=filename))
 
+
+
 #main program
+
+
 n = str(sys.argv[1])
 if (len(sys.argv) > 2):
     reportFileName = str(sys.argv[2])
