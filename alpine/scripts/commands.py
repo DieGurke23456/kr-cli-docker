@@ -9,7 +9,7 @@ import psutil
 import csv
 from threading import Timer
 import time
-TIMEOUT_DURATION = 250 
+TIMEOUT_DURATION = 500 
 def getChildProcesses(pid):
     children= []
     try: 
@@ -221,9 +221,8 @@ if (len(sys.argv) > 2):
     reportFileName = str(sys.argv[2])
 else:
     reportFileName = "testbericht"
-    
-print("removing old logs...")
-remove_logs(n)
+#print("removing old logs...")
+#remove_logs(n)
 print("running tests...")
 run_tests(n)
 oldpath = os.getcwd()
@@ -240,4 +239,3 @@ if os.environ['LOG_OUPUT_OWNER']:
     print("updating permissions...")
     update_file_owner(os.environ['LOG_OUPUT_OWNER'], n + "/reports",recursive=True)
     update_file_owner(os.environ['LOG_OUPUT_OWNER'], reportFileName)
-
