@@ -69,7 +69,9 @@ def get_tests_in_dir(path):
     return testlist
 def run_tests(testdir):
     oldpath = os.getcwd()
-    run_test(testdir)
+    testlist = get_tests_in_dir(testdir)
+    for test in testlist:
+        run_test(test)
     os.chdir(oldpath)
 def remove_logs(path):
     for root, dirs, files in os.walk(path+ "/reports"):
