@@ -10,7 +10,7 @@ import csv
 from threading import Timer
 import time
 import getopt
-TIMEOUT_DURATION = 20 
+TIMEOUT_DURATION = 350 
 def getChildProcesses(pid):
     children= []
     try: 
