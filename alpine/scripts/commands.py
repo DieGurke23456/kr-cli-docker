@@ -64,7 +64,8 @@ def run_test(path, test, headless=True):
         #else:
             #proc.wait()
     except subprocess.TimeoutExpired:
-        print("Test timeout expired!")
+        print("Test timeout expired!")#
+        time.sleep(10)
         # print(proc.pid)
         return -1
 
