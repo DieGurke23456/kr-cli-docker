@@ -43,10 +43,10 @@ def check_enough_firefox_windows(proc):
     else:
         proc.wait()    
 def run_test(path, test, headless=True):
-    try :
+    try:
         command = []
         if headless:
-            command = ["xvfb-run","--server-args=-screen 0, 1024x768x24"]
+            command = ["xvfb-run","-a","--server-args=-screen 0, 1024x768x24"]
         
         command = command + ["kr-cli", "run", "firefox", test, "-rp", path + "/reports", "--data",path + "/userdaten.csv"]
         subprocess.run(command, timeout=TIMEOUT_DURATION)    
