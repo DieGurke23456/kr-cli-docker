@@ -76,12 +76,13 @@ def check_enough_firefox_windows(proc):
         
 def kill_stuff():
     subprocess.run(["killall", "xvfb"]) # kill xvfb runtime blocking display :99
-    subprocess.run(["pkill","node"]) # kill node-runtime blocking port :3500
+    subprocess.run(["killall","node"]) # kill node-runtime blocking port :3500
+    subprocess.run(["killall","firefox"])
 def run_test(path, test, headless=True):
     try:
         command = []
         if headless:
-            command = ["xvfb-run","-a","--server-args=-screen 0, 1024x768x24"]
+            command = ["xvfb-run","-a","--server-args=-screen 0, 1920x1080x24"]
         
         command = command + ["kr-cli", "run", "firefox", test, "-rp", path + "/reports", "--data",path + "/userdaten.csv"]
         subprocess.run(command, timeout=TIMEOUT_DURATION)    
