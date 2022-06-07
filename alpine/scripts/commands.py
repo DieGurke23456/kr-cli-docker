@@ -82,6 +82,7 @@ def run_tests(testdir):
     for test in testlist:
         retval = run_test(testdir, testdir + "/" + test)
         if retval == -1:
+            time.sleep(10)
             run_test(testdir, testdir + "/" + test) #retry once 
     os.chdir(oldpath)
 def remove_logs(path):
