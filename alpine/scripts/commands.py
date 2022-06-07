@@ -46,7 +46,7 @@ def run_test(path, test, headless=True):
     try:
         command = []
         if headless:
-            command = ["xvfb-run","-a","--server-args=-screen 0, 1024x768x24"]
+            command = ["xvfb-run","-a","-e /dev/stdout","--server-args=-screen 0, 1024x768x24"]
         
         command = command + ["kr-cli", "run", "firefox", test, "-rp", path + "/reports", "--data",path + "/userdaten.csv"]
         subprocess.run(command, timeout=TIMEOUT_DURATION)    
@@ -64,8 +64,7 @@ def run_test(path, test, headless=True):
         #else:
             #proc.wait()
     except subprocess.TimeoutExpired:
-        print("Test timeout expired!")#
-        time.sleep(10)
+        print("Test timeout expired!")
         # print(proc.pid)
         return -1
 
@@ -82,7 +81,7 @@ def run_tests(testdir):
     for test in testlist:
         retval = run_test(testdir, testdir + "/" + test)
         if retval == -1:
-            time.sleep(10)
+            subprocess.run(["killall", "xvfb"])
             run_test(testdir, testdir + "/" + test) #retry once 
     os.chdir(oldpath)
 def remove_logs(path):
