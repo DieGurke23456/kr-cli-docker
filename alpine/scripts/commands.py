@@ -43,7 +43,7 @@ def check_enough_firefox_windows(proc):
         proc.wait()    
 def run_test(testpath):
     try :
-        subprocess.run(["xvfb-run","--server-args=-screen 0, 1024x768x24","kr-cli", "run", "firefox", testpath, "-rp", testpath + "/reports", "--data",testpath + "/userdaten.csv"], timeout=TIMEOUT_DURATION)
+        subprocess.run(["xvfb-run","--server-args=-screen 0, 1024x768x24","kr-cli", "run", "firefox", testpath, "-rp", testpath + "/reports", "--data",testpath + "/userdaten.csv"])
         #t = Timer(TIMEOUT_DURATION, check_enough_firefox_windows,[proc])
         #t.start()
         #proc.wait()
