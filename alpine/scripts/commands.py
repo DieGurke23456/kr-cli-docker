@@ -44,6 +44,7 @@ def check_enough_firefox_windows(proc):
 def run_test(path, test):
     try :
         subprocess.run(["xvfb-run","--server-args=-screen 0, 1024x768x24","kr-cli", "run", "firefox", test, "-rp", path + "/reports", "--data",path + "/userdaten.csv"], timeout=TIMEOUT_DURATION)
+        return 1
         #t = Timer(TIMEOUT_DURATION, check_enough_firefox_windows,[proc])
         #t.start()
         #proc.wait()
@@ -59,6 +60,7 @@ def run_test(path, test):
     except subprocess.TimeoutExpired:
         print("Test timeout expired!")
         print(proc.pid)
+        return -1
 
 def get_tests_in_dir(path):
     testlist = []
@@ -71,7 +73,9 @@ def run_tests(testdir):
     oldpath = os.getcwd()
     testlist = get_tests_in_dir(testdir)
     for test in testlist:
-        run_test(testdir, testdir + "/" + test)
+        retval = run_test(testdir, testdir + "/" + test)
+        if retval == -1:
+            run_test(testdir, testdir + "/" + test) #retry once 
     os.chdir(oldpath)
 def remove_logs(path):
     for root, dirs, files in os.walk(path+ "/reports"):
