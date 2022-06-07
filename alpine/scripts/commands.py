@@ -9,7 +9,7 @@ import psutil
 import csv
 from threading import Timer
 import time
-TIMEOUT_DURATION = 500 # the amount of seconds to wait for kr-cli to open another firefox-tab before we check if they have been opened
+TIMEOUT_DURATION = 250 
 def getChildProcesses(pid):
     children= []
     try: 
@@ -43,8 +43,7 @@ def check_enough_firefox_windows(proc):
         proc.wait()    
 def run_test(path, test):
     try :
-        
-        subprocess.run(["xvfb-run","--server-args=-screen 0, 1024x768x24","kr-cli", "run", "firefox", test, "-rp", path + "/reports", "--data",path + "/userdaten.csv"])
+        subprocess.run(["xvfb-run","--server-args=-screen 0, 1024x768x24","kr-cli", "run", "firefox", test, "-rp", path + "/reports", "--data",path + "/userdaten.csv"], timeout=TIMEOUT_DURATION)
         #t = Timer(TIMEOUT_DURATION, check_enough_firefox_windows,[proc])
         #t.start()
         #proc.wait()
