@@ -10,7 +10,7 @@ import csv
 from threading import Timer
 import time
 import getopt
-TIMEOUT_DURATION = 500 
+TIMEOUT_DURATION = 20 
 def getChildProcesses(pid):
     children= []
     try: 
@@ -65,7 +65,7 @@ def run_test(path, test, headless=True):
             #proc.wait()
     except subprocess.TimeoutExpired:
         print("Test timeout expired!")
-        #print(proc.pid)
+        # print(proc.pid)
         return -1
 
 def get_tests_in_dir(path):
