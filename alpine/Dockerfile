@@ -19,7 +19,7 @@ RUN npm i -g katalon-recorder-cli
 #install python
 RUN apk add --update python3 py3-pip
 RUN apk add --update py-psutil
-RUN aok add --update junit-xml
+RUN apk add --update junit-xml
 
 RUN mkdir /home/e2e
 RUN mkdir /home/scripts/
