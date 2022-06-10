@@ -273,7 +273,7 @@ def write_suites_XML(suites, outFileName):
     with io.open(outFileName, 'w', encoding="utf-8") as x:
         x.write(TestSuite.to_xml_string(testSuites))
 def case_to_JSU_testcase(case):
-    test_case = TestCase(case["name"], 'some.class.name',10, case["result"],"")
+    test_case = TestCase(case["name"], 'parentClass',10, case["result"],"")
     if case["result"] == 'FAILED':
         test_case.add_failure_info("FAILED")
     return test_case
