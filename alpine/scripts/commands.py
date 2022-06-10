@@ -272,13 +272,16 @@ def write_suites_XML(suites, outFileName):
     testSuites = list(map(suite_to_JSU_testsuite, suites))
     with io.open(outFileName, 'w', encoding="utf-8") as x:
         x.write(TestSuite.to_xml_string(testSuites))
-def case_to_JSU_testcase(case):
-    test_case = TestCase(case["name"], 'parentClass',10, case["result"],"")
+def case_to_JSU_testcase(case, parentName):
+    test_case = TestCase(case["name"], parentName,10, case["result"],"")
     if case["result"] == 'FAILED':
         test_case.add_failure_info("FAILED")
     return test_case
 def suite_to_JSU_testsuite(suite):
-    return TestSuite(suite["name"], list(map(case_to_JSU_testcase, suite["cases"])))
+    def withNameWrapper(case):
+        case_to_JSU_testcase(case, suite["name"])
+    return TestSuite(suite["name"], list(map(withNameWrapper, suite["cases"])))
+
 #main program
 try:
     headless, reportFileName, inputFileName, retries = getConfigFromCli(sys.argv)
