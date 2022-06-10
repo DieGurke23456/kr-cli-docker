@@ -302,5 +302,7 @@ print('checking user')
 print(os.environ['LOG_OUPUT_OWNER'])
 if os.environ['LOG_OUPUT_OWNER']:
     print("updating permissions...")
-    update_file_owner(os.environ['LOG_OUPUT_OWNER'], n + "/reports",recursive=True)
+    update_file_owner(os.environ['LOG_OUPUT_OWNER'], inputFileName + "/reports",recursive=True)
     update_file_owner(os.environ['LOG_OUPUT_OWNER'], reportFileName)
+    update_file_owner(os.environ['LOG_OUPUT_OWNER'], reportFileName + ".xml")
+
