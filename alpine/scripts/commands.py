@@ -10,14 +10,15 @@ import csv
 from threading import Timer
 import time
 import getopt
+from junit_xml import TestSuite, TestCase
 
 TIMEOUT_DURATION = 350 
 def print_usage():
-    print("test.py [-h] [-o OUT_FILENAME] [-r RETRIES] IN_DIR")
+    print("usage: test.py [-h] [-o OUT_FILENAME] [-r RETRIES] IN_DIR")
 def getConfigFromCli(argv):
     argsListNoFileName = argv[1:]
 
-    optionsString = "ho:"
+    optionsString = "ho:r:"
     options, posArgs = getopt.getopt(argsListNoFileName, optionsString)
     
     if len(posArgs) != 1:
@@ -40,7 +41,7 @@ def getConfigFromCli(argv):
         except:
             
             raise getopt.GetoptError
-    return [headless, reportFileName, posArgs[0]]
+    return [headless, reportFileName, posArgs[0], retries]
 
 def getChildProcesses(pid):
     children= []
@@ -78,7 +79,7 @@ def kill_stuff():
     subprocess.run(["killall", "xvfb"]) # kill xvfb runtime blocking display :99
     subprocess.run(["killall","node"]) # kill node-runtime blocking port :3500
     subprocess.run(["killall","firefox"])
-def run_test(path, test, headless=True):
+def run_test(path, test, headless=False):
     try:
         command = []
         if headless:
@@ -112,13 +113,19 @@ def get_tests_in_dir(path):
             if(file.endswith(".html")):
                 testlist.append(os.path.join(file))
     return testlist
-def run_tests(testdir):
+def run_tests(testdir, headless=False, retries=1):
     oldpath = os.getcwd()
     testlist = get_tests_in_dir(testdir)
+    curTest = 0
     for test in testlist:
-        retval = run_test(testdir, testdir + "/" + test)
-        if retval == -1:
+        retval = run_test(testdir, testdir + "/" + test, headless=headless)
+        retriesDone = 0
+        while retval == -1 and retriesDone < retries:
             retval = run_test(testdir, testdir + "/" + test) #retry once 
+            retriesDone = retriesDone + 1
+        
+        #print("%i OUT OF %i" %(len(testlist)) %curTest)
+        curTest = curTest + 1
     os.chdir(oldpath)
 def remove_logs(path):
     for root, dirs, files in os.walk(path+ "/reports"):
@@ -261,29 +268,36 @@ def write_suites(suites, reportFileName):
 def update_file_owner(newOwner, filename, recursive=False):
     recString = "-R" if recursive else ""
     os.system("chown {recString} {newOwner} {filename}".format(recString=recString, newOwner=newOwner, filename=filename))
-
-
-
+def write_suites_XML(suites, outFileName):
+    testSuites = list(map(suite_to_JSU_testsuite, suites))
+    with io.open(outFileName, 'w', encoding="utf-8") as x:
+        x.write(TestSuite.to_xml_string(testSuites))
+def case_to_JSU_testcase(case):
+    test_case = TestCase(case["name"], 'some.class.name',10, case["result"],"")
+    if case["result"] == 'FAILED':
+        test_case.add_failure_info("FAILED")
+    return test_case
+def suite_to_JSU_testsuite(suite):
+    return TestSuite(suite["name"], list(map(case_to_JSU_testcase, suite["cases"])))
 #main program
-
-
-n = str(sys.argv[1])
-if (len(sys.argv) > 2):
-    reportFileName = str(sys.argv[2])
-else:
-    reportFileName = "testbericht"
-#print("removing old logs...")
-#remove_logs(n)
+try:
+    headless, reportFileName, inputFileName, retries = getConfigFromCli(sys.argv)
+except:
+    print("error!")
+    print_usage()
+    exit()
 print("running tests...")
-run_tests(n)
-oldpath = os.getcwd()
-os.chdir(oldpath)
+#run_tests(inputFileName, headless=headless, retries=retries)
+#oldpath = os.getcwd()
+#os.chdir(oldpath)
 print("combining logs...")
 
-csvFiles = get_test_csv_files(n)
+csvFiles = get_test_csv_files(inputFileName)
 combined_csv = read_and_combine_csv_files(csvFiles)
 suites = suites_from_combined_csv(combined_csv)
 write_suites(suites, reportFileName)
+write_suites_XML(suites, "suiteResult.xml")
+
 print('checking user')
 print(os.environ['LOG_OUPUT_OWNER'])
 if os.environ['LOG_OUPUT_OWNER']:
