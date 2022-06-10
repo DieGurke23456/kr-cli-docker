@@ -71,6 +71,7 @@ RUN apt-get -y install python3.8
 RUN apt-get -y install python3-pip
 RUN apt-get -y install xvfb
 RUN pip3 install psutil
+RUN pip3 install junit-xml
 
 # versions of local tools
 RUN echo "node version: $(node -v) \n" \
