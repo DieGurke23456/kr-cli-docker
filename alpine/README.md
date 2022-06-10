@@ -34,7 +34,8 @@ IN_DIR             the directory where your test.html files are located.
 -r RETRIES         kr-cli is pretty unstable (*sigh*), number of times a test-suite is retried after timeout
                    default=2
 ```
-
+#### Screenshot:
+![image](jenkins_integration.jpg)
 #### Usage:
 ```shell
 headless
