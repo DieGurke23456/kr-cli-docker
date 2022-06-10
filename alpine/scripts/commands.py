@@ -279,7 +279,7 @@ def case_to_JSU_testcase(case, parentName):
     return test_case
 def suite_to_JSU_testsuite(suite):
     def withNameWrapper(case):
-        case_to_JSU_testcase(case, suite["name"])
+        return case_to_JSU_testcase(case, suite["name"])
     return TestSuite(suite["name"], list(map(withNameWrapper, suite["cases"])))
 
 #main program
