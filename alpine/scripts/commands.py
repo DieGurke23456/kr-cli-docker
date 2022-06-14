@@ -10,6 +10,7 @@ import csv
 from threading import Timer
 import time
 import getopt
+from datetime import datetime
 from junit_xml import TestSuite, TestCase
 
 TIMEOUT_DURATION = 350 
@@ -189,7 +190,7 @@ def suites_from_combined_csv(data):
         newSuite["summary"]["failed"] = len(list(x for x in newSuite["cases"] if x["result"] == "FAILED"))
         suites.append(newSuite)
     return suites
-def filterFile(filename, reportFileName):
+def filterFile(filename):
     suite = {
         "name":"",
         "cases":[]
@@ -219,7 +220,7 @@ def filterFile(filename, reportFileName):
                     suite["cases"].append(testCase)
                     testCase = newCase()
                 else:
-                    testCase["trace"].append(str(line.rstrip('\n')))
+                    testCase["trace"].append(str(line))
     return suite
 def string_from_test_suite(suiteElement):
     def case_text(case):
@@ -245,19 +246,15 @@ def get_summary_string(suiteElements):
     
     returnElements = list(map(single_summary, suiteElements))
     return "\n".join(returnElements) + "\n" + totalSummary
-def combine_logs(fileList, reportFileName):
+def combine_logs_to_suites(fileList):
     def f(filename):
-        suite = filterFile(filename, reportFileName)
+        suite = filterFile(filename)
         suite["summary"] = get_summary_from_test_suite(suite)
         return suite
     
     suiteElements = list(map(f, fileList))
     summaryString = get_summary_string(suiteElements)
-    with io.open(reportFileName, 'w',encoding="utf-8") as x:
-        x.write("TEST SUITES:\n")
-        for e in suiteElements: 
-            x.write(string_from_test_suite(e) + "\n-----------------------------------------------------------------\n")
-        x.write(summaryString)
+    return suiteElements
 def write_suites(suites, reportFileName):
     summaryString = get_summary_string(suites)
     with io.open(reportFileName, 'w', encoding="utf-8") as x:
@@ -273,15 +270,30 @@ def write_suites_XML(suites, outFileName):
     with io.open(outFileName, 'w', encoding="utf-8") as x:
         x.write(TestSuite.to_xml_string(testSuites))
 def case_to_JSU_testcase(case, parentName):
-    test_case = TestCase(case["name"], parentName,10, case["result"],"")
+    test_case = TestCase(case["name"], parentName,get_total_time_from_trace(case["trace"]), "\n".join(case["trace"]),"")
     if case["result"] == 'FAILED':
-        test_case.add_failure_info("FAILED")
+        test_case.add_failure_info(get_failure_lines(case["trace"]))
     return test_case
+def get_failure_lines(test_trace):
+    errorPattern = re.compile("\[error\]",re.IGNORECASE)
+    error_lines = []
+    def filter_only_error(line):
+        return errorPattern.search(line)
+    return '\n'.join(list(filter(filter_only_error, test_trace)))
 def suite_to_JSU_testsuite(suite):
     def withNameWrapper(case):
         return case_to_JSU_testcase(case, suite["name"])
     return TestSuite(suite["name"], list(map(withNameWrapper, suite["cases"])))
-
+def get_total_time_from_trace(trace):
+    if len(trace) < 2: 
+        return 0
+    firstLine = trace[0]
+    lastLine = trace[-1]
+    diffobject = parse_date_time(lastLine[1:20]) - parse_date_time(firstLine[1:20])
+    return diffobject.total_seconds()
+def parse_date_time(timeString):
+    dateformat = "%Y-%m-%d %H:%M:%S"
+    return datetime.strptime(timeString, dateformat)
 #main program
 try:
     headless, reportFileName, inputFileName, retries = getConfigFromCli(sys.argv)
@@ -295,11 +307,13 @@ oldpath = os.getcwd()
 os.chdir(oldpath)
 print("combining logs...")
 
-csvFiles = get_test_csv_files(inputFileName)
-combined_csv = read_and_combine_csv_files(csvFiles)
-suites = suites_from_combined_csv(combined_csv)
-write_suites(suites, reportFileName)
-write_suites_XML(suites, reportFileName+".xml")
+#csvFiles = get_test_csv_files(inputFileName)
+#combined_csv = read_and_combine_csv_files(csvFiles)
+#suites = suites_from_combined_csv(combined_csv)
+suites_from_logs = combine_logs_to_suites(get_test_log_files(inputFileName))
+#write_suites(suites, reportFileName)
+#write_suites_XML(suites, reportFileName+".xml")
+write_suites_XML(suites_from_logs, reportFileName+".xml")
 
 print('checking user')
 print(os.environ['LOG_OUPUT_OWNER'])
