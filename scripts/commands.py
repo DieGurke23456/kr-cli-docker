@@ -9,7 +9,41 @@ import psutil
 import csv
 from threading import Timer
 import time
-TIMEOUT_DURATION = 500 # the amount of seconds to wait for kr-cli to open another firefox-tab before we check if they have been opened
+import getopt
+from datetime import datetime
+from junit_xml import TestSuite, TestCase
+
+TIMEOUT_DURATION = 350 
+def print_usage():
+    print("usage: test.py [-h] [-o OUT_FILENAME] [-r RETRIES] IN_DIR")
+def getConfigFromCli(argv):
+    argsListNoFileName = argv[1:]
+
+    optionsString = "ho:r:"
+    options, posArgs = getopt.getopt(argsListNoFileName, optionsString)
+    
+    if len(posArgs) != 1:
+        raise getopt.GetoptError
+    
+    headless = False
+    if ('-h', '') in options:
+        headless = True
+        print("headless")
+    
+    reportFileName = "reportFile"
+    if any(x[0] == '-o' for x in options):
+        reportFileName = [x for x in options if x[0] == '-o' ][0][1]
+    
+    retries = 0
+    if any(x[0] == '-r' for x in options):
+        retries = [x for x in options if x[0] == '-r' ][0][1]
+        try:
+            retries = int(retries)
+        except:
+            
+            raise getopt.GetoptError
+    return [headless, reportFileName, posArgs[0], retries]
+
 def getChildProcesses(pid):
     children= []
     try: 
@@ -41,9 +75,20 @@ def check_enough_firefox_windows(proc):
         raise subprocess.TimeoutExpired(testpath, TIMEOUT_DURATION)
     else:
         proc.wait()    
-def run_test(testpath):
-    try :
-        subprocess.run(["xvfb-run","kr-cli", "run", "firefox", testpath, "-rp", "reports", "--data","userdaten.csv"], timeout=TIMEOUT_DURATION)
+        
+def kill_stuff():
+    subprocess.run(["killall", "xvfb"]) # kill xvfb runtime blocking display :99
+    subprocess.run(["killall","node"]) # kill node-runtime blocking port :3500
+    subprocess.run(["killall","firefox"])
+def run_test(path, test, headless=False):
+    try:
+        command = []
+        if headless:
+            command = ["xvfb-run","-a","--server-args=-screen 0, 1920x1080x24"]
+        
+        command = command + ["kr-cli", "run", "firefox", test, "-rp", path + "/reports", "--data",path + "/userdaten.csv"]
+        subprocess.run(command, timeout=TIMEOUT_DURATION)    
+        return 1
         #t = Timer(TIMEOUT_DURATION, check_enough_firefox_windows,[proc])
         #t.start()
         #proc.wait()
@@ -58,7 +103,9 @@ def run_test(testpath):
             #proc.wait()
     except subprocess.TimeoutExpired:
         print("Test timeout expired!")
-        print(proc.pid)
+        kill_stuff()
+        # print(proc.pid)
+        return -1
 
 def get_tests_in_dir(path):
     testlist = []
@@ -67,19 +114,33 @@ def get_tests_in_dir(path):
             if(file.endswith(".html")):
                 testlist.append(os.path.join(file))
     return testlist
-def run_tests(testdir):
+def run_tests(testdir, headless=False, retries=1):
     oldpath = os.getcwd()
-    os.chdir(testdir)
-    testlist = get_tests_in_dir(os.getcwd())
-    if not os.path.exists("reports"):
-        os.makedirs("reports")
+    testlist = get_tests_in_dir(testdir)
+    curTest = 0
     for test in testlist:
-        run_test(test)
-        #pid = os.fork()
-        #if n : 
-            #pass
-        #sys.exit()
+        retval = run_test(testdir, testdir + "/" + test, headless=headless)
+        retriesDone = 0
+        while retval == -1 and retriesDone < retries:
+            retval = run_test(testdir, testdir + "/" + test) #retry once 
+            retriesDone = retriesDone + 1
+        
+        #print("%i OUT OF %i" %(len(testlist)) %curTest)
+        curTest = curTest + 1
     os.chdir(oldpath)
+def remove_logs(path):
+    for root, dirs, files in os.walk(path+ "/reports"):
+        for file in files:
+            try:
+                os.remove(os.path.join(root,file))
+            except OSError as error:
+                print(error)
+                print("File '%s' can not be removed" %file)
+        for dir in dirs:
+            try:
+                os.rmdir(os.path.join(root, dir))
+            except OSError as error:
+                print("Directory '%s' can not be removed" %dir)
 def get_test_log_files(path):
     filelist = []
     for root, dirs, files in os.walk(path):
@@ -129,7 +190,7 @@ def suites_from_combined_csv(data):
         newSuite["summary"]["failed"] = len(list(x for x in newSuite["cases"] if x["result"] == "FAILED"))
         suites.append(newSuite)
     return suites
-def filterFile(filename, reportFileName):
+def filterFile(filename):
     suite = {
         "name":"",
         "cases":[]
@@ -159,7 +220,7 @@ def filterFile(filename, reportFileName):
                     suite["cases"].append(testCase)
                     testCase = newCase()
                 else:
-                    testCase["trace"].append(str(line.rstrip('\n')))
+                    testCase["trace"].append(str(line))
     return suite
 def string_from_test_suite(suiteElement):
     def case_text(case):
@@ -185,19 +246,15 @@ def get_summary_string(suiteElements):
     
     returnElements = list(map(single_summary, suiteElements))
     return "\n".join(returnElements) + "\n" + totalSummary
-def combine_logs(fileList, reportFileName):
+def combine_logs_to_suites(fileList):
     def f(filename):
-        suite = filterFile(filename, reportFileName)
+        suite = filterFile(filename)
         suite["summary"] = get_summary_from_test_suite(suite)
         return suite
     
     suiteElements = list(map(f, fileList))
     summaryString = get_summary_string(suiteElements)
-    with io.open(reportFileName, 'w',encoding="utf-8") as x:
-        x.write("TEST SUITES:\n")
-        for e in suiteElements: 
-            x.write(string_from_test_suite(e) + "\n-----------------------------------------------------------------\n")
-        x.write(summaryString)
+    return suiteElements
 def write_suites(suites, reportFileName):
     summaryString = get_summary_string(suites)
     with io.open(reportFileName, 'w', encoding="utf-8") as x:
@@ -205,22 +262,63 @@ def write_suites(suites, reportFileName):
         for e in suites:
             x.write(string_from_test_suite(e) + "\n------------------------------------------------\n")
         x.write(summaryString)
-    
-
+def update_file_owner(newOwner, filename, recursive=False):
+    recString = "-R" if recursive else ""
+    os.system("chown {recString} {newOwner} {filename}".format(recString=recString, newOwner=newOwner, filename=filename))
+def write_suites_XML(suites, outFileName):
+    testSuites = list(map(suite_to_JSU_testsuite, suites))
+    with io.open(outFileName, 'w', encoding="utf-8") as x:
+        x.write(TestSuite.to_xml_string(testSuites))
+def case_to_JSU_testcase(case, parentName):
+    test_case = TestCase(case["name"], parentName,get_total_time_from_trace(case["trace"]), "\n".join(case["trace"]),"")
+    if case["result"] == 'FAILED':
+        test_case.add_failure_info(get_failure_lines(case["trace"]))
+    return test_case
+def get_failure_lines(test_trace):
+    errorPattern = re.compile("\[error\]",re.IGNORECASE)
+    error_lines = []
+    def filter_only_error(line):
+        return errorPattern.search(line)
+    return '\n'.join(list(filter(filter_only_error, test_trace)))
+def suite_to_JSU_testsuite(suite):
+    def withNameWrapper(case):
+        return case_to_JSU_testcase(case, suite["name"])
+    return TestSuite(suite["name"], list(map(withNameWrapper, suite["cases"])))
+def get_total_time_from_trace(trace):
+    if len(trace) < 2: 
+        return 0
+    firstLine = trace[0]
+    lastLine = trace[-1]
+    diffobject = parse_date_time(lastLine[1:20]) - parse_date_time(firstLine[1:20])
+    return diffobject.total_seconds()
+def parse_date_time(timeString):
+    dateformat = "%Y-%m-%d %H:%M:%S"
+    return datetime.strptime(timeString, dateformat)
 #main program
-n = str(sys.argv[1])
-if (len(sys.argv) > 2):
-    reportFileName = str(sys.argv[2])
-else:
-    reportFileName = "testbericht"
-    
+try:
+    headless, reportFileName, inputFileName, retries = getConfigFromCli(sys.argv)
+except:
+    print("error!")
+    print_usage()
+    exit()
 print("running tests...")
-run_tests(n)
+run_tests(inputFileName, headless=headless, retries=retries)
 oldpath = os.getcwd()
 os.chdir(oldpath)
 print("combining logs...")
 
-csvFiles = get_test_csv_files(n)
-combined_csv = read_and_combine_csv_files(csvFiles)
-suites = suites_from_combined_csv(combined_csv)
-write_suites(suites, reportFileName)
+#csvFiles = get_test_csv_files(inputFileName)
+#combined_csv = read_and_combine_csv_files(csvFiles)
+#suites = suites_from_combined_csv(combined_csv)
+suites_from_logs = combine_logs_to_suites(get_test_log_files(inputFileName))
+#write_suites(suites, reportFileName)
+#write_suites_XML(suites, reportFileName+".xml")
+write_suites_XML(suites_from_logs, reportFileName+".xml")
+
+print('checking user')
+print(os.environ['LOG_OUPUT_OWNER'])
+if os.environ['LOG_OUPUT_OWNER']:
+    print("updating permissions...")
+    update_file_owner(os.environ['LOG_OUPUT_OWNER'], inputFileName + "/reports",recursive=True)
+    update_file_owner(os.environ['LOG_OUPUT_OWNER'], reportFileName)
+    update_file_owner(os.environ['LOG_OUPUT_OWNER'], reportFileName + ".xml")
