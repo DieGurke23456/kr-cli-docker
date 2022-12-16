@@ -13,6 +13,8 @@ import getopt
 from datetime import datetime
 from junit_xml import TestSuite, TestCase
 
+GLOBAL_COUNT = 0
+
 TIMEOUT_DURATION = 350 
 def print_usage():
     print("usage: test.py [-h] [-o OUT_FILENAME] [-r RETRIES] IN_DIR")
@@ -246,6 +248,20 @@ def get_summary_string(suiteElements):
     
     returnElements = list(map(single_summary, suiteElements))
     return "\n".join(returnElements) + "\n" + totalSummary
+def remove_duplicates(suite_elements):
+    without_duplicates = []
+    for i in range(len(suite_elements)):
+        # append suite if suite with same name not already in list
+        if len(without_duplicates) == 0 or (not any(suite["name"] == suite_elements[i]["name"] for suite in without_duplicates)):
+            without_duplicates.append(suite_elements[i])
+            continue
+        # find index of suite with same name
+        index = next(j for j,v in enumerate(without_duplicates) if v["name"] == suite_elements[i]["name"])
+        if without_duplicates[index]["summary"]["failed"] <= suite_elements[i]["summary"]["failed"]:
+            continue
+        # overwrite if suite performed better
+        without_duplicates[index] = suite_elements[i]
+    return without_duplicates
 def combine_logs_to_suites(fileList):
     def f(filename):
         suite = filterFile(filename)
@@ -253,8 +269,9 @@ def combine_logs_to_suites(fileList):
         return suite
     
     suiteElements = list(map(f, fileList))
-    summaryString = get_summary_string(suiteElements)
-    return suiteElements
+    without_duplicates = remove_duplicates(suiteElements)
+    summaryString = get_summary_string(without_duplicates)
+    return without_duplicates
 def write_suites(suites, reportFileName):
     summaryString = get_summary_string(suites)
     with io.open(reportFileName, 'w', encoding="utf-8") as x:
